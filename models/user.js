@@ -2,16 +2,17 @@ const mongoose = require("mongoose");
 const bcrypt = require("bcrypt");
 
 const userSchema = mongoose.Schema({
-  last_name: {
-    type: String,
-    trim: true,
-    required: true,
-  },
   first_name: {
     type: String,
     trim: true,
     required: true,
   },
+  last_name: {
+    type: String,
+    trim: true,
+    required: true,
+  },
+
   username: {
     type: String,
     required: true,
@@ -60,6 +61,11 @@ const userSchema = mongoose.Schema({
     // enum: ["admin", "user", "Subscriber"],
   },
   // E-COMMERCE
+  isAdmin: {
+    type: Boolean,
+    required: true,
+    default: false,
+  },
   cart: {
     type: Array,
     default: [],

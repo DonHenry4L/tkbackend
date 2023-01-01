@@ -1,4 +1,6 @@
 const User = require("../models/user");
+const Review = require("../models/Review");
+const Product = require("../models/product");
 const asyncHandler = require("express-async-handler");
 const {
   validateEmail,
@@ -10,7 +12,11 @@ const jwt = require("jsonwebtoken");
 const bcrypt = require("bcrypt");
 const { generateToken } = require("../helpers/tokens");
 const { sendVerificationEmail, sendResetCode } = require("../helpers/mailer");
-const { sendError, generateRandomByte } = require("../utils/helper");
+const {
+  sendError,
+  generateRandomByte,
+  comparePassword,
+} = require("../utils/helper");
 const { generateOTP, generateMailTransporter } = require("../utils/mail");
 const { isValidObjectId } = require("mongoose");
 const PasswordResetToken = require("../models/passwordResetToken");
@@ -74,7 +80,6 @@ exports.register = async (req, res) => {
     gender,
   });
 
-  console.log(newUser);
   await newUser.save();
 
   // const emailVerificationToken = generateToken(
@@ -125,56 +130,117 @@ exports.register = async (req, res) => {
   <h1>${OTP}</h1>`,
   });
 
-  res.status(201).json({
-    user: {
-      id: newUser._id,
-      username: newUser.username,
-      isAdmin: newUser.isAdmin,
-      picture: newUser.picture,
-      first_name: newUser.first_name,
-      last_name: newUser.last_name,
-      email: newUser.email,
-      message: "Register Success ! please activate your email to start",
-    },
-  });
+  res
+    .cookie(
+      "access_token",
+      generateToken(
+        newUser._id,
+        newUser.first_name,
+        newUser.last_name,
+        newUser.email,
+        newUser.isAdmin,
+        newUser.role
+      ),
+      {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "strict",
+      }
+    )
+    .status(201)
+    .json({
+      user: {
+        id: newUser._id,
+        username: newUser.username,
+        isAdmin: newUser.isAdmin,
+        picture: newUser.picture,
+        first_name: newUser.first_name,
+        last_name: newUser.last_name,
+        email: newUser.email,
+        message: "Register Success ! please activate your email to start",
+      },
+    });
 };
 
 exports.login = async (req, res) => {
-  const { email, password } = req.body;
+  const { email, password, doNotLogout } = req.body;
+
+  if (!(email && password)) {
+    return res.status(400).json("All inputs are required");
+  }
 
   const user = await User.findOne({ email });
   if (!user) return sendError(res, "Email is not found in Database!");
 
-  const matched = await user.comparePassword(password);
-  if (!matched) return sendError(res, "Email/Password mismatch!");
+  // const matched = await user.comparePassword(password);
+  // if (!matched) return sendError(res, "Email/Password mismatch!");
 
-  const {
-    _id,
-    first_name,
-    last_name,
-    isAdmin,
-    picture,
-    username,
-    isVerified,
-    role,
-  } = user;
+  if (user && comparePassword(password, user.password)) {
+    let cookieParams = {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+    };
 
-  const jwtToken = jwt.sign({ userId: _id }, process.env.JWT_SECRET);
+    if (doNotLogout) {
+      cookieParams = { ...cookieParams, maxAge: 1000 * 60 * 60 * 24 * 7 }; //1000=lms
+    }
+    return res
+      .cookie(
+        "access_token",
+        generateToken(
+          user._id,
+          user.first_name,
+          user.last_name,
+          user.email,
+          user.isAdmin,
+          user.role
+        ),
+        cookieParams
+      )
+      .json({
+        success: "User logged in",
+        userLoggedIn: {
+          _id: user._id,
+          first_name: user.first_name,
+          last_name: user.last_name,
+          email: user.email,
+          isAdmin: user.isAdmin,
+          role: user.role,
+          doNotLogout,
+        },
+      });
+  } else {
+    return sendError(res, "Email/Password mismatch!");
+  }
 
-  res.json({
-    user: {
-      id: _id,
-      first_name: first_name,
-      last_name: last_name,
-      username: username,
-      picture: picture,
-      email: email,
-      isAdmin: isAdmin,
-      token: jwtToken,
-      verified: isVerified,
-      role: role,
-    },
-  });
+  // const {
+  //   _id,
+  //   first_name,
+  //   last_name,
+  //   isAdmin,
+  //   picture,
+  //   username,
+  //   isVerified,
+  //   role,
+  // } = user;
+
+  // const jwtToken = jwt.sign({ userId: _id }, process.env.JWT_SECRET);
+
+  // res.json({
+  //   user: {
+  //     id: _id,
+  //     first_name: first_name,
+  //     last_name: last_name,
+  //     username: username,
+  //     picture: picture,
+  //     email: email,
+  //     isAdmin: isAdmin,
+  //     token: jwtToken,
+  //     verified: isVerified,
+  //     role: role,
+  //   },
+  // });
 
   // res.json({
   //   user: { id: _id, name, email, role, token: jwtToken, isVerified },
@@ -246,6 +312,173 @@ exports.resendEmailVerificationToken = async (req, res) => {
     verified: user.verified,
     message: "New OTP has been sent to your registered email account.",
   });
+};
+
+exports.getUsers = async (req, res) => {
+  try {
+    const users = await User.find({}).select("-password");
+    return res.json(users);
+  } catch (err) {
+    return sendError(res, err);
+  }
+};
+
+exports.updateUserProfile = async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id);
+    user.first_name = req.body.first_name || user.first_name;
+    user.last_name = req.body.last_name || user.last_name;
+    user.username = req.body.username || user.username;
+    user.email = req.body.email || user.email;
+    user.phone = req.body.phone || user.phone;
+    user.gender = req.body.gender || user.gender;
+    user.nationality = req.body.nationality || user.nationality;
+    user.country = req.body.country || user.country;
+    user.town = req.body.town || user.town;
+    user.lga = req.body.lga || user.lga;
+    user.state = req.body.state || user.state;
+    user.picture = req.body.picture;
+    user.address = req.body.address;
+    if (req.body.password !== user.password) {
+      user.password = req.body.password;
+    }
+
+    //   const matched = await user.comparePassword(password);
+    // if (!matched) return req.body.password
+    await user.save();
+
+    res.json({
+      success: "user updated",
+      userUpdated: {
+        id: user._id,
+        first_name: user.first_name,
+        last_name: user.last_name,
+        username: user.username,
+        picture: user.picture,
+        phone: user.phone,
+        email: user.email,
+        isAdmin: user.isAdmin,
+        role: user.role,
+      },
+    });
+  } catch (error) {
+    if (error) return sendError(res, "failed to update");
+  }
+};
+
+exports.getUserProfile = async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id);
+    return res.send(user);
+  } catch (error) {
+    if (error) return sendError(res, "failed to Get User Profile");
+  }
+};
+
+exports.writeReview = async (req, res) => {
+  try {
+    const session = await Review.startSession();
+
+    // get comment, rating from request.body:
+    const { comment, rating } = req.body;
+    // validate request:
+    if (!(comment && rating)) {
+      return res.status(400).send("All inputs are required");
+    }
+
+    // create review id manually because it is needed also for saving in Product collection
+    const ObjectId = require("mongodb").ObjectId;
+    let reviewId = ObjectId();
+
+    session.startTransaction();
+
+    await Review.create(
+      [
+        {
+          _id: reviewId,
+          comment: comment,
+          rating: Number(rating),
+          user: { _id: req.user._id, name: req.user.username },
+        },
+      ],
+      { session: session }
+    );
+
+    const product = await Product.findById(req.params.productId)
+      .populate("reviews")
+      .session(session);
+
+    const alreadyReviewed = product.reviews.find(
+      (r) => r.user._id.toString() === req.user._id.toString()
+    );
+
+    if (alreadyReviewed) {
+      await session.abortTransaction();
+      session.endSession();
+      return res.status(400).send("product already reviewed");
+    }
+
+    let prc = [...product.reviews];
+    prc.push({ rating: rating });
+    product.reviews.push(reviewId);
+    if (product.reviews.length === 1) {
+      product.rating = Number(rating);
+      product.reviewsNumber = 1;
+    } else {
+      product.reviewsNumber = product.reviews.length;
+      product.rating =
+        prc
+          .map((item) => Number(item.rating))
+          .reduce((sum, item) => sum + item, 0) / product.reviews.length;
+    }
+    await product.save();
+
+    await session.commitTransaction();
+    session.endSession();
+    res.send("review created");
+  } catch (error) {
+    await session.abortTransaction();
+    return res.status(400).send("Failed to create a review");
+  }
+};
+
+exports.getUser = async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id).select(
+      "username first_name last_name email isAdmin role"
+    );
+    return res.send(user);
+  } catch (error) {
+    return res.status(400).send("Failed to fetch user from the database");
+  }
+};
+
+exports.updateUser = async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id);
+    user.first_name = req.body.first_name || user.first_name;
+    user.last_name = req.body.last_name || user.last_name;
+    user.username = req.body.username || user.username;
+    user.email = req.body.email || user.email;
+    user.role = req.body.role || user.role;
+    user.isAdmin = req.body.isAdmin || user.isAdmin; // same with role
+
+    await user.save();
+
+    res.send("user Updated");
+  } catch (error) {
+    return res.status(400).send("Failed to Update User");
+  }
+};
+
+exports.deleteUser = async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id);
+    await user.remove();
+    res.send("user removed");
+  } catch (error) {
+    return res.status(400).send("Failed to Delete User");
+  }
 };
 
 // CHAT

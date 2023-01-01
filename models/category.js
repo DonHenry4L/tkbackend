@@ -8,11 +8,11 @@ const categorySchema = new Schema(
       type: String,
       required: true,
     },
-    slug: {
-      type: String,
-      unique: true,
-      lowercase: true,
-    },
+    // slug: {
+    //   type: String,
+    //   unique: true,
+    //   lowercase: true,
+    // },
   },
   { timestamps: true }
 );

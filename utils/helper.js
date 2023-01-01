@@ -1,3 +1,6 @@
+const bcrypt = require("bcryptjs");
+const salt = bcrypt.genSaltSync(10);
+
 exports.sendError = (res, error, statusCode = 401) => {
   res.status(statusCode).json({ error });
 };
@@ -34,6 +37,10 @@ exports.hashPassword = (password) => {
   });
 };
 
-exports.comparePassword = (password, hashed) => {
-  return bcrypt.compare(password, hashed);
-};
+// exports.comparePassword = (password, hashed) => {
+//   return bcrypt.compare(password, hashed);
+// };
+
+exports.hashPassword = (password) => bcrypt.hashSync(password, salt);
+exports.comparePassword = (inputPassword, hashPassword) =>
+  bcrypt.compareSync(inputPassword, hashPassword);

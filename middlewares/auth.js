@@ -5,24 +5,43 @@ const { sendError } = require("../utils/helper");
 // const admin = require("../firebase");
 
 exports.isAuth = async (req, res, next) => {
-  const token = req.headers?.authorization;
+  // const token = req.headers?.authorization;
 
-  if (!token) return sendError(res, "Invalid token!");
-  const jwtToken = token.split("Bearer ")[1];
+  // if (!token) return sendError(res, "Invalid token!");
+  // const jwtToken = token.split("Bearer ")[1];
 
-  if (!jwtToken) return sendError(res, "Invalid JWTToken!");
-  const decode = jwt.verify(jwtToken, process.env.JWT_SECRET);
-  const { userId } = decode;
+  // if (!jwtToken) return sendError(res, "Invalid JWTToken!");
+  // const decode = jwt.verify(jwtToken, process.env.JWT_SECRET);
+  // const { userId } = decode;
 
-  const user = await User.findById(userId);
-  if (!user) return sendError(res, "unauthorized access!(No User Token Found)");
+  // const user = await User.findById(userId);
+  // if (!user) return sendError(res, "unauthorized access!(No User Token Found)");
 
-  req.user = user;
+  // req.user = user;
 
-  next();
+  // next();
+  // next();
+  // return; // to do: remove Later
+  try {
+    const token = req.cookies.access_token;
+    if (!token) {
+      return res.status(403).send("A token is required for authentication");
+    }
+    try {
+      const decode = jwt.verify(token, process.env.JWT_SECRET);
+      req.user = decode;
+      next();
+    } catch (error) {
+      return res.status(401).send("Unauthorized. Invalid Token");
+    }
+  } catch (error) {
+    next(error);
+  }
 };
 
 exports.isAdmin = async (req, res, next) => {
+  // next();
+  // return; // to do: remove Later
   const { user } = req;
   if (user.role === "Admin") next();
   else return sendError(res, "unauthorized access!(Not An Admin)");
@@ -34,6 +53,8 @@ exports.isAuthor = async (req, res, next) => {
   else return sendError(res, "unauthorized access! (Not An Author)");
 };
 exports.isSubscriber = async (req, res, next) => {
+  // next();
+  // return; // to do: remove Later
   const { user } = req;
   if (user.role === "Subscriber") next();
   else return sendError(res, "unauthorized access! (Not A Subscriber)");
@@ -123,7 +144,7 @@ exports.canUpdateDeleteComment = async (req, res, next) => {
         }
         break;
       default:
-        return res.status(403).send("Unauthorized");
+        return res.status(403).send("Unauthorized user");
     }
   } catch (err) {
     console.log(err);
