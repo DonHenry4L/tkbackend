@@ -10,7 +10,7 @@ const {
 const EmailVerificationToken = require("../models/emailVerificationToken");
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcrypt");
-const { generateToken } = require("../helpers/tokens");
+const { generateToken, generateCookieToken } = require("../helpers/tokens");
 const { sendVerificationEmail, sendResetCode } = require("../helpers/mailer");
 const {
   sendError,
@@ -133,7 +133,7 @@ exports.register = async (req, res) => {
   res
     .cookie(
       "access_token",
-      generateToken(
+      generateCookieToken(
         newUser._id,
         newUser.first_name,
         newUser.last_name,
@@ -170,49 +170,94 @@ exports.login = async (req, res) => {
   }
 
   const user = await User.findOne({ email });
-  if (!user) return sendError(res, "Email is not found in Database!");
+  if (!user) return sendError(res, "Email/Password mismatch!");
 
-  // const matched = await user.comparePassword(password);
-  // if (!matched) return sendError(res, "Email/Password mismatch!");
+  const matched = await user.comparePassword(password);
+  if (!matched) return sendError(res, "Email/Password mismatch!");
 
-  if (user && comparePassword(password, user.password)) {
-    let cookieParams = {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "strict",
-    };
+  let cookieParams = {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "strict",
+      };
 
-    if (doNotLogout) {
-      cookieParams = { ...cookieParams, maxAge: 1000 * 60 * 60 * 24 * 7 }; //1000=lms
-    }
-    return res
-      .cookie(
-        "access_token",
-        generateToken(
-          user._id,
-          user.first_name,
-          user.last_name,
-          user.email,
-          user.isAdmin,
-          user.role
-        ),
-        cookieParams
-      )
-      .json({
-        success: "User logged in",
-        userLoggedIn: {
-          _id: user._id,
-          first_name: user.first_name,
-          last_name: user.last_name,
-          email: user.email,
-          isAdmin: user.isAdmin,
-          role: user.role,
-          doNotLogout,
-        },
-      });
-  } else {
-    return sendError(res, "Email/Password mismatch!");
-  }
+      if (doNotLogout) {
+            cookieParams = { ...cookieParams, maxAge: 1000 * 60 * 60 * 24 * 7 }; //1000=lms
+          }
+
+  const { _id, first_name, last_name,picture,username, isVerified, role, isAdmin } = user;
+  const jwtToken = jwt.sign({ userId: _id }, process.env.JWT_SECRET);
+  // res.cookie(
+  //   "access_token",
+  //   generateCookieToken(
+  //     user._id,
+  //     user.first_name,
+  //     user.last_name,
+  //     user.email,
+  //     user.isAdmin,
+  //     user.role
+  //   ),
+  //   cookieParams
+  // )
+  // .json({
+  //   user: { 
+  //     id: _id,
+  //             first_name,
+  //             last_name,
+  //             email,
+  //            isAdmin,
+  //             token: jwtToken,
+  //             role,
+  //             picture,
+  //             username,
+  //             isVerified,
+  //             doNotLogout, },
+  // });
+
+  res.json({
+    user: { id: _id, first_name, last_name, picture,
+      username, email, role,isAdmin, token: jwtToken, isVerified, doNotLogout },
+  });
+  
+
+  // if (user && comparePassword(password, user.password)) {
+  //   let cookieParams = {
+  //     httpOnly: true,
+  //     secure: process.env.NODE_ENV === "production",
+  //     sameSite: "strict",
+  //   };
+
+  //   if (doNotLogout) {
+  //     cookieParams = { ...cookieParams, maxAge: 1000 * 60 * 60 * 24 * 7 }; //1000=lms
+  //   }
+  //   return res
+  //     .cookie(
+  //       "access_token",
+  //       generateToken(
+  //         user._id,
+  //         user.first_name,
+  //         user.last_name,
+  //         user.email,
+  //         user.isAdmin,
+  //         user.role
+  //       ),
+  //       cookieParams
+  //     )
+  //     .json({
+  //       success: "User logged in",
+  //       userLoggedIn: {
+  //         _id: user._id,
+  //         first_name: user.first_name,
+  //         last_name: user.last_name,
+  //         email: user.email,
+  //         isAdmin: user.isAdmin,
+  //         role: user.role,
+  //         doNotLogout,
+  //       },
+  //     });
+  // } else {
+  //   return sendError(res, "Email/Password mismatch!");
+  // }
 
   // const {
   //   _id,

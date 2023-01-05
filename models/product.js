@@ -17,6 +17,19 @@ const productSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
+    category: {
+      type: String,
+      ref: "E_Category",
+      required: true,
+    },
+    count: {
+      type: Number,
+      required: true,
+    },
+    price: {
+      type: Number,
+      required: true,
+    },
     price: {
       type: Number,
       required: true,
@@ -26,19 +39,6 @@ const productSchema = new mongoose.Schema(
     },
     reviewsNumber: {
       type: Number,
-    },
-    price: {
-      type: Number,
-      required: true,
-    },
-    // category: {
-    //   type: mongoose.Schema.Types.ObjectId,
-    //   ref: "E_Category",
-    //   required: true,
-    // },
-    count: {
-      type: Number,
-      required: true,
     },
     sales: {
       type: Number,

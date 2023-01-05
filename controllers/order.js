@@ -29,29 +29,29 @@ exports.createOrder = async (req, res) => {
   try {
     const { cartItems, orderTotal, paymentMethod } = req.body;
     if (!cartItems || !orderTotal || !paymentMethod) {
-      return res.status(400).send("All inputs are required");
+        return res.status(400).send("All inputs are required");
     }
 
     let ids = cartItems.map((item) => {
-      return item.productID;
-    });
+        return item.productID;
+    })
     let qty = cartItems.map((item) => {
-      return Number(item.quantity);
-    });
+        return Number(item.quantity);
+    })
 
     await Product.find({ _id: { $in: ids } }).then((products) => {
-      products.forEach(function (product, idx) {
-        product.sales += qty[idx];
-        product.save();
-      });
-    });
+        products.forEach(function (product, idx) {
+            product.sales += qty[idx];
+            product.save();
+        })
+    })
 
     const order = new Order({
-      user: ObjectId(req.user._id),
-      orderTotal: orderTotal,
-      cartItems: cartItems,
-      paymentMethod: paymentMethod,
-    });
+        user: ObjectId(req.user._id),
+        orderTotal: orderTotal,
+        cartItems: cartItems,
+        paymentMethod: paymentMethod,
+    })
     const createdOrder = await order.save();
     res.status(201).send(createdOrder);
   } catch (err) {
@@ -61,12 +61,12 @@ exports.createOrder = async (req, res) => {
 
 exports.updateOrderToPaid = async (req, res) => {
   try {
-    const order = await Order.findById(req.params.id);
-    order.isPaid = true;
-    order.paidAt = Date.now();
+      const order = await Order.findById(req.params.id)
+      order.isPaid = true;
+      order.paidAt = Date.now();
 
-    const updateOrder = await order.save();
-    res.send(updateOrder);
+      const updatedOrder = await order.save();
+      res.send(updatedOrder);
   } catch (error) {
     if (error) return sendError(res, "Order error from database");
   }

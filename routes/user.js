@@ -44,35 +44,35 @@ router.delete("/user/:id", isAuth, isAdmin, deleteUser);
 router.get("/current-author", isAuth, isAuthor, currentUser);
 router.get("/current-subscriber", currentUser);
 
-router.get("/get-token", (req, res) => {
-  try {
-    const accessToken = req.cookies["access_token"]
-    const decode = jwt.verify(accessToken, process.env.JWT_SECRET)
-    return res.json({token: decode.first_name, isAdmin: decode.isAdmin})
-  } catch (error) {
-    return res.status(401).send("Unable to authenticate. Invalid Token")
-  }
-})
+// router.get("/get-token", (req, res) => {
+//   try {
+//     const accessToken = req.cookies["access_token"]
+//     const decode = jwt.verify(accessToken, process.env.JWT_SECRET)
+//     return res.json({token: decode.first_name, isAdmin: decode.isAdmin})
+//   } catch (error) {
+//     return res.status(401).send("Unable to authenticate. Invalid Token")
+//   }
+// })
 
 router.get("/logout", (req, res) => {
   return res.clearCookie("access_token").send("access token cleared")
 })
 
-// router.get("/is-auth", isAuth, (req, res) => {
-//   const { user } = req;
-//   res.json({
-//     user: {
-//       id: user._id,
-//       first_name: user.first_name,
-//       last_name: user.last_name,
-//       username: user.username,
-//       picture: user.picture,
-//       email: user.email,
-//       isVerified: user.isVerified,
-//       role: user.role,
-//       isAdmin: user.isAdmin
-//     },
-//   });
-// });
+router.get("/is-auth", isAuth, (req, res) => {
+  const { user } = req;
+  res.json({
+    user: {
+      id: user._id,
+      first_name: user.first_name,
+      last_name: user.last_name,
+      username: user.username,
+      picture: user.picture,
+      email: user.email,
+      isVerified: user.isVerified,
+      role: user.role,
+      isAdmin: user.isAdmin
+    },
+  });
+});
 
 module.exports = router;

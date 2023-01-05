@@ -74,7 +74,6 @@ exports.getProducts = async (req, res) => {
         category: { $in: a },
       };
     }
-
     let attrsQueryCondition = [];
     if (req.query.attrs) {
       // attrs=RAM-1TB-2TB-4TB,color-blue-red
@@ -131,16 +130,6 @@ exports.getProducts = async (req, res) => {
       };
     }
 
-    // if (queryCondition) {
-    //   query = {
-    //     $and: [
-    //       priceQueryCondition,
-    //       ratingQueryCondition,
-    //       categoryQueryCondition,
-    //     ],
-    //   };
-    // }
-
     const totalProducts = await Product.countDocuments(query);
     const products = await Product.find(query)
       .select(select)
@@ -160,9 +149,9 @@ exports.getProducts = async (req, res) => {
 
 exports.getProductById = async (req, res) => {
   try {
-    const products = await Product.findById(req.params.id).populate("reviews");
-
-    res.json(products);
+    const product = await Product.findById(req.params.id)
+      .populate("reviews")
+    res.json(product);
   } catch (error) {
     return res.status(400).json(error.message);
   }
@@ -237,7 +226,7 @@ exports.adminCreateProduct = async (req, res) => {
 exports.adminUpdateProduct = async (req, res) => {
   try {
     const product = await Product.findById(req.params.id);
-    const { name, description, price, category, attributesTable } = req.body;
+    const {name, description, count, price, category, attributesTable } = req.body;
     product.name = name || product.name;
     product.description = description || product.description;
     product.count = count || product.count;
@@ -261,6 +250,16 @@ exports.adminUpdateProduct = async (req, res) => {
 };
 
 exports.adminUpload = async (req, res) => {
+  if (req.query.cloudinary === "true") {
+    try {
+        let product = await Product.findById(req.query.productId)
+        product.images.push({ path: req.body.url });
+        await product.save();
+    } catch (err) {
+      sendError(res, "Upload Failed, Internal server error", err);
+    }
+   return 
+}
   try {
     if (!req.files || !!req.files.images === false) {
       return res.status(400).send("No files were uploaded.");
@@ -276,9 +275,10 @@ exports.adminUpload = async (req, res) => {
       __dirname,
       "../../frontend",
       "public",
-      "image",
+      "images",
       "products"
     );
+    let product = await Product.findById(req.query.productId)
 
     let imagesTable = [];
     if (Array.isArray(req.files.images)) {
@@ -289,7 +289,7 @@ exports.adminUpload = async (req, res) => {
     for (let image of imagesTable) {
       var fileName = uuidv4() + path.extname(image.name);
       var uploadPath = uploadDirectly + "/" + fileName;
-      product.images.push({ path: "/image/products/" + fileName });
+      product.images.push({ path: "/images/products/" + fileName });
       image.mv(uploadPath, function (err) {
         if (err) {
           sendError(res, err);
@@ -298,13 +298,23 @@ exports.adminUpload = async (req, res) => {
     }
     await product.save();
 
-    return res.send("File upload complete!");
+    return res.send("Files uploaded!");
   } catch (error) {
     return res.status(400).json(error.message);
   }
 };
 
 exports.adminDeleteProductImage = async (req, res) => {
+  const imagePath = decodeURIComponent(req.params.imagePath);
+  if (req.query.cloudinary === "true") {
+      try {
+         await Product.findOneAndUpdate({ _id: req.params.productId }, { $pull: { images: { path: imagePath } } })
+          return res.end();
+      } catch(er) {
+        sendError(res, "Image(s) can't be deleted, Internal server error", err);
+      }
+      return
+  }
   try {
     const imagePath = decodeURIComponent(req.params.imagePath);
 

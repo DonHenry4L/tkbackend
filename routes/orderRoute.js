@@ -12,9 +12,9 @@ const { isAuth, isAdmin } = require("../middlewares/auth");
 const router = express.Router();
 
 // user routes
-router.post("/orders/create", isAuth, createOrder);
 router.get("/orders", isAuth, getUserOrders);
 router.get("/userOrder/:id", isAuth, getOrder);
+router.post("/createOrder", isAuth, createOrder);
 router.put("/paid/:id", isAuth, updateOrderToPaid);
 
 // admin routes
