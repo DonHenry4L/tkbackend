@@ -1,4 +1,5 @@
 const path = require("path");
+var helmet = require('helmet')
 const express = require("express");
 const mongoose = require("mongoose");
 const cors = require("cors");
@@ -12,6 +13,9 @@ const { handleNotFound } = require("./utils/helper");
 const { errorHandler } = require("./middlewares/error");
 dotenv.config();
 const app = express();
+
+
+app.use(helmet())
 
 app.use(bodyParser.json());
 app.use(morgan("dev"));
@@ -144,15 +148,35 @@ if (process.env.NODE_ENV === "production") {
   });
 }
 
+app.use((error, req, res, next) => {
+     if (process.env.NODE_ENV === "development") {
+       console.error(error);
+     }
+     next(error);
+   });
+   app.use((error, req, res, next) => {
+     if (process.env.NODE_ENV === "development") {
+       res.status(500).json({
+         message: error.message,
+         stack: error.stack,
+       });
+     } else {
+       res.status(500).json({
+         message: error.message,
+       });
+     }
+   });
+
 //database
 mongoose
   .connect(process.env.DATABASE_URL, {
-    useNewUrlParser: true,
+     useNewUrlParser: true,
+      useUnifiedTopology: true,
   })
   .then(() => console.log("database connected successfully"))
   .catch((err) => console.log("error connecting to mongodb", err));
 
-const PORT = process.env.PORT || 8000;
+const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
   console.log(`server is running on port ${PORT}..`);
 });
