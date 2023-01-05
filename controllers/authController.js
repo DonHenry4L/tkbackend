@@ -2,7 +2,7 @@ const formidable = require("formidable");
 const validator = require("validator");
 const registerModel = require("../models/authModel");
 const fs = require("fs");
-const bcrypt = require("bcrypt");
+const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 
 exports.userRegister = (req, res) => {

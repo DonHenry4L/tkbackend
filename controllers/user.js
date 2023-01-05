@@ -9,7 +9,7 @@ const {
 } = require("../helpers/validation");
 const EmailVerificationToken = require("../models/emailVerificationToken");
 const jwt = require("jsonwebtoken");
-const bcrypt = require("bcrypt");
+const bcrypt = require("bcryptjs");
 const { generateToken, generateCookieToken } = require("../helpers/tokens");
 const { sendVerificationEmail, sendResetCode } = require("../helpers/mailer");
 const {
