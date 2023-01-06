@@ -4,6 +4,7 @@ const fs = require("fs");
 const slugify = require("slugify");
 const e_imageValidate = require("../utils/e_imageValidate");
 const product = require("../models/product");
+const { sendError } = require("../utils/helper");
 
 // exports.createProduct = async (req, res) => {
 //   try {
@@ -249,17 +250,17 @@ exports.adminUpdateProduct = async (req, res) => {
   }
 };
 
-exports.adminUpload = async (req, res) => {
+exports.adminUpload = async (req, res, next) => {
   if (req.query.cloudinary === "true") {
-    try {
-        let product = await Product.findById(req.query.productId)
-        product.images.push({ path: req.body.url });
-        await product.save();
-    } catch (err) {
-      sendError(res, "Upload Failed, Internal server error", err);
+        try {
+            let product = await Product.findById(req.query.productId)
+            product.images.push({ path: req.body.url });
+            await product.save();
+        } catch (err) {
+          sendError(res, "Image(s) can't be uploaded, Internal server error", err);
+        }
+       return 
     }
-   return 
-}
   try {
     if (!req.files || !!req.files.images === false) {
       return res.status(400).send("No files were uploaded.");
@@ -271,7 +272,7 @@ exports.adminUpload = async (req, res) => {
 
     const path = require("path");
     const { v4: uuidv4 } = require("uuid");
-    const uploadDirectly = path.resolve(
+    const uploadDirectory = path.resolve(
       __dirname,
       "../../frontend",
       "public",
@@ -286,21 +287,22 @@ exports.adminUpload = async (req, res) => {
     } else {
       imagesTable.push(req.files.images);
     }
+
     for (let image of imagesTable) {
       var fileName = uuidv4() + path.extname(image.name);
-      var uploadPath = uploadDirectly + "/" + fileName;
+      var uploadPath = uploadDirectory + "/" + fileName;
       product.images.push({ path: "/images/products/" + fileName });
       image.mv(uploadPath, function (err) {
         if (err) {
-          sendError(res, err);
+          return res.status(500).send(err);
         }
       });
     }
     await product.save();
 
     return res.send("Files uploaded!");
-  } catch (error) {
-    return res.status(400).json(error.message);
+  } catch (err) {
+    sendError(res, "Image(s) can't be uploaded...", err);
   }
 };
 

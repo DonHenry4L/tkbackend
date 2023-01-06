@@ -24,28 +24,28 @@ const { isAuth, isAdmin } = require("../middlewares/auth");
 // router.delete("/product/:productId", isAuth, isAdmin, remove);
 // router.put("/product/:productId", isAuth, isAdmin, formidable(), update);
 
-router.get("/products", getProducts);
-router.get("/products/category/:categoryName", isAuth, getProducts);
+router.get("/", getProducts);
+router.get("/category/:categoryName", isAuth, getProducts);
 router.get(
-  "/products/category/:categoryName/search/:searchQuery",
+  "/category/:categoryName/search/:searchQuery",
   isAuth,
   getProducts
 );
-router.get("/products/search/:searchQuery", isAuth, getProducts);
-router.get("/products/get-one/:id", isAuth, getProductById);
-router.get("/products/bestSellers", isAuth, getBestSellers);
+router.get("/search/:searchQuery", isAuth, getProducts);
+router.get("/get-one/:id", isAuth, getProductById);
+router.get("/bestSellers", isAuth, getBestSellers);
 
 // admin routes
-router.post("/products/admin", isAuth, isAdmin, adminCreateProduct);
-router.post("/products/admin/upload", isAuth, isAdmin, adminUpload);
-router.get("/products/admin", isAuth, isAdmin, adminGetProducts);
-router.delete("/products/admin/:id", isAuth, isAdmin, adminDeleteProducts);
+router.post("/admin", isAuth, isAdmin, adminCreateProduct);
+router.post("/admin/upload", isAuth, isAdmin, adminUpload);
+router.get("/admin", isAuth, isAdmin, adminGetProducts);
+router.delete("/admin/:id", isAuth, isAdmin, adminDeleteProducts);
 router.delete(
-  "/products/admin/image/:imagePath/:productId",
+  "/admin/image/:imagePath/:productId",
   isAuth,
   isAdmin,
   adminDeleteProductImage
 );
-router.put("/products/admin/:id", isAuth, isAdmin, adminUpdateProduct);
+router.put("/admin/:id", isAuth, isAdmin, adminUpdateProduct);
 
 module.exports = router;

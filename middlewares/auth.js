@@ -52,9 +52,7 @@ exports.isAuthor = async (req, res, next) => {
   if (user.role === "Author") next();
   else return sendError(res, "unauthorized access! (Not An Author)");
 };
-exports.isSubscriber = async (req, res, next) => {
-  // next();
-  // return; // to do: remove Later
+exports.isASubscriber = async (req, res, next) => {
   const { user } = req;
   if (user.role === "Subscriber") next();
   else return sendError(res, "unauthorized access! (Not A Subscriber)");

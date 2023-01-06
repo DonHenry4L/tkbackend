@@ -12,6 +12,7 @@ const dotenv = require("dotenv");
 const { handleNotFound } = require("./utils/helper");
 const { errorHandler } = require("./middlewares/error");
 dotenv.config();
+const apiRoutes = require("./routes/apiRoutes");
 const app = express();
 
 
@@ -31,7 +32,10 @@ app.use(
   })
 );
 //routes
-readdirSync("./routes").map((r) => app.use("/", require("./routes/" + r)));
+// readdirSync("./routes").map((r) => app.use("/", require("./routes/" + r)));
+
+
+app.use("/api", apiRoutes)
 
 app.use("/*", handleNotFound);
 

@@ -53,7 +53,7 @@ router.post(
   uploadImageFile
 );
 router.get("/posts", posts);
-router.get("/post/:slug", singlePost);
+router.get("/:slug", singlePost);
 router.delete("/post/:postId", isAuth, canUpdateDeletePost, removePost);
 router.put("/edit-post/:postId", isAuth, canUpdateDeletePost, editPost);
 router.get("/post-count", postCount);

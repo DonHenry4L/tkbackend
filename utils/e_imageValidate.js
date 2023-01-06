@@ -1,5 +1,3 @@
-const { sendError } = require("./helper");
-
 const e_imageValidate = (images) => {
   let imageTable = [];
   if (Array.isArray(images)) {
@@ -11,12 +9,11 @@ const e_imageValidate = (images) => {
     return { error: "Send only 3 images at once" };
   }
   for (let image of imageTable) {
-    if (image.size > 1048576)
-      return sendError(res, "Size too large (above 1 MB");
+    if (image.size > 1048576) return { error: "Size too large (above 1 MB)" };
     const filetypes = /jpg|jpeg|png/;
     const mimetype = filetypes.test(image.mimetype);
     if (!mimetype)
-      return sendError(res, "Invalid file type (should be .jpg, .jpeg, .png");
+      return { error: "Incorrect mime type (should be jpg,jpeg or png" };
   }
   return { error: false };
 };
