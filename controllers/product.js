@@ -61,7 +61,7 @@ exports.getProducts = async (req, res) => {
     const categoryName = req.params.categoryName || "";
     if (categoryName) {
       queryCondition = true;
-      let a = categoryName.replaceAll(",", "/");
+      let a = categoryName.replaceAll(/,/g, "/");
       var regEx = new RegExp("^" + a);
       categoryQueryCondition = { category: regEx };
     }
