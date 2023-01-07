@@ -22,10 +22,10 @@ const { isValidObjectId } = require("mongoose");
 const PasswordResetToken = require("../models/passwordResetToken");
 
 // SENDINBLUE_API //
-const Sib = require("sib-api-v3-sdk");
+const SibApiV3Sdk  = require("sib-api-v3-sdk");
 require("dotenv").config();
 
-const client = Sib.ApiClient.instance;
+const client = SibApiV3Sdk.ApiClient.instance;
 const apiKey = client.authentications["api-key"];
 apiKey.apiKey = process.env.SENDINBLUE_API_KEY;
 
@@ -102,33 +102,73 @@ exports.register = async (req, res) => {
   await newEmailVerificationToken.save();
   // send that otp to our user
 
-  // prepare email
-  const tranEmailApi = new Sib.TransactionalEmailsApi();
+  // prepare email and sms
+  //Email
+  const tranEmailApiInstant = new SibApiV3Sdk.TransactionalEmailsApi();
+  let sendSmtpEmail = new SibApiV3Sdk.SendSmtpEmail();
 
-  const sender = {
+  //Sms
+  let apiInstance = new SibApiV3Sdk.TransactionalSMSApi();
+  let sendTransacSms = new SibApiV3Sdk.SendTransacSms();
+
+  sendTransacSms = {
+    "sender": "TKfamily",
+    "receiver": newUser.phone,
+    "content": `<p>Your Tkfamily verification OTP</p>
+    <h1>${OTP}</h1>`,
+  }
+
+  apiInstance.sendTransacSms(sendTransacSms).then(function(data) {
+    console.log('Sms successfully sent to recipient: ' + JSON.stringify(data));
+  }, function(error) {
+    console.error(error);
+  });
+
+  sendSmtpEmail.sender = {
     email: process.env.VERIFICATION_EMAIL,
     name: "TKF",
-    templateId: 1,
-    params: {
-      greeting: `Hello`,
-      headline: "This Message is from Tksarl.com",
-    },
-  };
+  }
 
-  const receivers = [
-    {
-      email: newUser.email,
-    },
-  ];
+  sendSmtpEmail.to = {
+    email: newUser.email, 
+    name: newUser.username
+  }
 
-  tranEmailApi.sendTransacEmail({
-    sender,
-    to: receivers,
-    subject: "Email Verification",
+  sendSmtpEmail.subject = "This Message is from Tksarl.com"
 
-    htmlContent: `<p>Your verification OTP</p>
-  <h1>${OTP}</h1>`,
-  });
+  sendSmtpEmail.htmlContent = `<p>Your verification OTP</p>
+   <h1>${OTP}</h1>`
+
+   tranEmailApiInstant.sendTransacEmail(sendSmtpEmail).then(function(data) {
+    console.log('Email successfully sent to recipient: ' + JSON.stringify(data))
+   }, function(error) {
+    console.log(error)
+   })
+
+  // const sender = {
+  //   email: process.env.VERIFICATION_EMAIL,
+  //   name: "TKF",
+  //   templateId: 1,
+  //   params: {
+  //     greeting: `Hello`,
+  //     headline: "This Message is from Tksarl.com",
+  //   },
+  // };
+
+  // const receivers = [
+  //   {
+  //     email: newUser.email,
+  //   },
+  // ];
+
+  // tranEmailApi.sendTransacEmail({
+  //   sender,
+  //   to: receivers,
+  //   subject: "Email Verification",
+
+  //   htmlContent: `<p>Your verification OTP</p>
+  // <h1>${OTP}</h1>`,
+  // });
 
   res
     .cookie(
