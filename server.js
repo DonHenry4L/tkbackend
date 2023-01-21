@@ -17,14 +17,18 @@ dotenv.config();
 const apiRoutes = require("./routes/apiRoutes");
 const app = express();
 
-const httpServer = createServer(app);
+const formidable = require("express-formidable");
+const { isAdmin, isAuth, canCreateRead } = require("./middlewares/auth");
+const { uploadImageFile } = require("./controllers/post");
 
-// const io = require("socket.io")(), {
-//   cors: {
-//     origin: "*",
-//     methods: ["GET", "POST"],
-//   },
-// });
+// const httpServer = createServer(app);
+
+const io = require("socket.io")((httpServer = createServer(app)), {
+  cors: {
+    origin: "*",
+    methods: ["GET", "POST"],
+  },
+});
 global.io = new Server(httpServer);
 
 app.use(helmet());
@@ -46,6 +50,14 @@ app.use(express.static(path.join(__dirname, "public")));
 // readdirSync("./routes").map((r) => app.use("/", require("./routes/" + r)));
 
 app.use("/api", apiRoutes);
+
+app.post(
+  "/upload-image-file",
+  isAuth,
+  formidable(),
+  canCreateRead,
+  uploadImageFile
+);
 
 app.use("/*", handleNotFound);
 

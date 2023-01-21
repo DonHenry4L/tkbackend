@@ -6,43 +6,43 @@ const { sendError } = require("../utils/helper");
 // const admin = require("../firebase");
 
 exports.isAuth = async (req, res, next) => {
-  //   const bearerToken = req.headers?.authorization;
-  //   if (!bearerToken)
-  //     return sendError(res, "unauthorized access. Check your Token!");
+  const bearerToken = req.headers?.authorization;
+  if (!bearerToken)
+    return sendError(res, "unauthorized access. Check your Token!");
 
-  //   const token = bearerToken.split(" ")[1];
-  //   if (!token) return sendError(res, "unauthorized access!. invalid token!");
+  const token = bearerToken.split(" ")[1];
+  if (!token) return sendError(res, "unauthorized access!. invalid token!");
 
-  //   const decode = jwt.verify(token, process.env.JWT_SECRET);
-  //   if (!decode.userId) {
-  //     return sendError(res, "unauthorized access!. unable to decode userId");
-  //   }
-
-  //   const user = await User.findById(decode.userId);
-  //   if (!user) {
-  //     return sendError(res, "unauthorized access!. userId not found");
-  //   }
-
-  //   req.user = user;
-
-  //   next();
-  // };
-  try {
-    const token = req.cookies.access_token;
-    if (!token) {
-      return res.status(403).send("A token is required for authentication");
-    }
-    try {
-      const decode = jwt.verify(token, process.env.JWT_SECRET);
-      req.user = decode;
-      next();
-    } catch (error) {
-      return res.status(401).send("Unauthorized. Invalid Token");
-    }
-  } catch (error) {
-    next(error);
+  const decode = jwt.verify(token, process.env.JWT_SECRET);
+  if (!decode.userId) {
+    return sendError(res, "unauthorized access!. unable to decode userId");
   }
+
+  const user = await User.findById(decode.userId);
+  if (!user) {
+    return sendError(res, "unauthorized access!. userId not found");
+  }
+
+  req.user = user;
+
+  next();
 };
+//   try {
+//     const token = req.cookies.access_token;
+//     if (!token) {
+//       return res.status(403).send("A token is required for authentication");
+//     }
+//     try {
+//       const decode = jwt.verify(token, process.env.JWT_SECRET);
+//       req.user = decode;
+//       next();
+//     } catch (error) {
+//       return res.status(401).send("Unauthorized. Invalid Token");
+//     }
+//   } catch (error) {
+//     next(error);
+//   }
+// };
 
 exports.isAdmin = async (req, res, next) => {
   const { user } = req;

@@ -35,7 +35,7 @@ exports.uploadImage = async (req, res) => {
 exports.uploadImageFile = async (req, res) => {
   try {
     // console.log(req.files);
-    const result = await cloudinary.uploader.upload(req.files.file.path);
+    const result = await cloudinary.uploader.upload(req.files?.file?.path);
     // save to db
     const media = await new Media({
       url: result.secure_url,
