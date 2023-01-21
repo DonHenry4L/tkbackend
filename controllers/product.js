@@ -3,7 +3,6 @@ const recordsPerPage = require("../Config/pagination");
 const fs = require("fs");
 const slugify = require("slugify");
 const e_imageValidate = require("../utils/e_imageValidate");
-const product = require("../models/product");
 const { sendError } = require("../utils/helper");
 
 // exports.createProduct = async (req, res) => {
@@ -43,7 +42,7 @@ const { sendError } = require("../utils/helper");
 //   }
 // };
 
-exports.getProducts = async (req, res) => {
+exports.getProducts = async (req, res, next) => {
   try {
     let query = {};
     let queryCondition = false;
@@ -62,7 +61,7 @@ exports.getProducts = async (req, res) => {
     const categoryName = req.params.categoryName || "";
     if (categoryName) {
       queryCondition = true;
-      let a = categoryName.replaceAll(/,/g, "/");
+      let a = categoryName.replaceAll(",", "/");
       var regEx = new RegExp("^" + a);
       categoryQueryCondition = { category: regEx };
     }
@@ -144,14 +143,13 @@ exports.getProducts = async (req, res) => {
       paginationLinksNumber: Math.ceil(totalProducts / recordsPerPage),
     });
   } catch (error) {
-    return res.status(400).json(error.message);
+    next(error);
   }
 };
 
 exports.getProductById = async (req, res) => {
   try {
-    const product = await Product.findById(req.params.id)
-      .populate("reviews")
+    const product = await Product.findById(req.params.id).populate("reviews");
     res.json(product);
   } catch (error) {
     return res.status(400).json(error.message);
@@ -227,7 +225,8 @@ exports.adminCreateProduct = async (req, res) => {
 exports.adminUpdateProduct = async (req, res) => {
   try {
     const product = await Product.findById(req.params.id);
-    const {name, description, count, price, category, attributesTable } = req.body;
+    const { name, description, count, price, category, attributesTable } =
+      req.body;
     product.name = name || product.name;
     product.description = description || product.description;
     product.count = count || product.count;
@@ -252,19 +251,24 @@ exports.adminUpdateProduct = async (req, res) => {
 
 exports.adminUpload = async (req, res, next) => {
   if (req.query.cloudinary === "true") {
-        try {
-            let product = await Product.findById(req.query.productId)
-            product.images.push({ path: req.body.url });
-            await product.save();
-        } catch (err) {
-          sendError(res, "Image(s) can't be uploaded, Internal server error", err);
-        }
-       return 
+    try {
+      let product = await Product.findById(req.query.productId);
+      product.images.push({ path: req.body.url });
+      await product.save();
+    } catch (err) {
+      sendError(
+        res,
+        "No Image Found In The DataBase, Internal server error",
+        err
+      );
     }
+    return;
+  }
   try {
     if (!req.files || !!req.files.images === false) {
       return res.status(400).send("No files were uploaded.");
     }
+
     const validateResult = e_imageValidate(req.files.images);
     if (validateResult.error) {
       return res.status(400).send(validateResult.error);
@@ -279,7 +283,8 @@ exports.adminUpload = async (req, res, next) => {
       "images",
       "products"
     );
-    let product = await Product.findById(req.query.productId)
+
+    let product = await Product.findById(req.query.productId);
 
     let imagesTable = [];
     if (Array.isArray(req.files.images)) {
@@ -299,23 +304,26 @@ exports.adminUpload = async (req, res, next) => {
       });
     }
     await product.save();
-
     return res.send("Files uploaded!");
   } catch (err) {
-    sendError(res, "Image(s) can't be uploaded...", err);
+    sendError(res, "Unable To upload File, Internal server error", err);
   }
+  console.log(req.files);
 };
 
 exports.adminDeleteProductImage = async (req, res) => {
   const imagePath = decodeURIComponent(req.params.imagePath);
   if (req.query.cloudinary === "true") {
-      try {
-         await Product.findOneAndUpdate({ _id: req.params.productId }, { $pull: { images: { path: imagePath } } })
-          return res.end();
-      } catch(er) {
-        sendError(res, "Image(s) can't be deleted, Internal server error", err);
-      }
-      return
+    try {
+      await Product.findOneAndUpdate(
+        { _id: req.params.productId },
+        { $pull: { images: { path: imagePath } } }
+      );
+      return res.end();
+    } catch (er) {
+      sendError(res, "Image(s) can't be deleted, Internal server error", err);
+    }
+    return;
   }
   try {
     const imagePath = decodeURIComponent(req.params.imagePath);

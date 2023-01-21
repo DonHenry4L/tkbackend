@@ -1,17 +1,17 @@
-require("dotenv").config()
+require("dotenv").config();
 
-const connectDB = require("../config/db")
-connectDB()
+const connectDB = require("../config/db");
+connectDB();
 
-const categoryData = require("./categories")
-const productData = require("./products")
-const reviewData = require("./reviews")
-const orderData = require("./orders")
+const categoryData = require("./categories");
+const productData = require("./products");
+const reviewData = require("./reviews");
+const orderData = require("./orders");
 
-const Category = require("../models/category")
-const Product = require("../models/product")
-const Review = require("../models/Review")
-const Order = require("../models/OrderModel")
+const Category = require("../models/E_category");
+const Product = require("../models/product");
+const Review = require("../models/Review");
+const Order = require("../models/OrderModel");
 
 const importData = async () => {
   try {
@@ -37,7 +37,7 @@ const importData = async () => {
 
       console.log("Seeder data imported successfully");
       process.exit();
-      return
+      return;
     }
     console.log("Seeder data deleted successfully");
     process.exit();
@@ -47,4 +47,3 @@ const importData = async () => {
   }
 };
 importData();
- 

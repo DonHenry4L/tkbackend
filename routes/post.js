@@ -43,12 +43,11 @@ router.post(
 
 // isAdmin,
 // uploadImage.single("poster"),
-
 router.post("/upload-image", isAuth, canCreateRead, uploadImage);
 router.post(
   "/upload-image-file",
-  formidable(),
   isAuth,
+  formidable(),
   canCreateRead,
   uploadImageFile
 );

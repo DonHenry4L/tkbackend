@@ -1,5 +1,6 @@
 const bcrypt = require("bcryptjs");
 const salt = bcrypt.genSaltSync(10);
+const crypto = require("crypto");
 
 exports.sendError = (res, error, statusCode = 401) => {
   res.status(statusCode).json({ error });

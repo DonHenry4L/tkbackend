@@ -24,20 +24,38 @@ const { isAuth, isAdmin } = require("../middlewares/auth");
 // router.delete("/product/:productId", isAuth, isAdmin, remove);
 // router.put("/product/:productId", isAuth, isAdmin, formidable(), update);
 
-router.get("/", getProducts);
-router.get("/category/:categoryName", isAuth, getProducts);
-router.get(
-  "/category/:categoryName/search/:searchQuery",
-  isAuth,
-  getProducts
-);
-router.get("/search/:searchQuery", isAuth, getProducts);
-router.get("/get-one/:id", isAuth, getProductById);
-router.get("/bestSellers", isAuth, getBestSellers);
+// router.get("/", getProducts);
+// router.get("/category/:categoryName", isAuth, getProducts);
+// router.get(
+//   "/category/:categoryName/search/:searchQuery",
+//   isAuth,
+//   getProducts
+// );
+// router.get("/search/:searchQuery", isAuth, getProducts);
+// router.get("/get-one/:id", isAuth, getProductById);
+// router.get("/bestSellers", isAuth, getBestSellers);
 
-// admin routes
-router.post("/admin", isAuth, isAdmin, adminCreateProduct);
-router.post("/admin/upload", isAuth, isAdmin, adminUpload);
+// // admin routes
+// router.post("/admin", isAuth, isAdmin, adminCreateProduct);
+// router.post("/admin/upload", isAuth, isAdmin, adminUpload);
+// router.get("/admin", isAuth, isAdmin, adminGetProducts);
+// router.delete("/admin/:id", isAuth, isAdmin, adminDeleteProducts);
+// router.delete(
+//   "/admin/image/:imagePath/:productId",
+//   isAuth,
+//   isAdmin,
+//   adminDeleteProductImage
+// );
+// router.put("/admin/:id", isAuth, isAdmin, adminUpdateProduct);
+
+router.get("/category/:categoryName/search/:searchQuery", isAuth, getProducts);
+router.get("/category/:categoryName", isAuth, getProducts);
+router.get("/search/:searchQuery", isAuth, getProducts);
+router.get("/", getProducts);
+router.get("/bestsellers", isAuth, getBestSellers);
+router.get("/get-one/:id", isAuth, getProductById);
+
+// admin routes:
 router.get("/admin", isAuth, isAdmin, adminGetProducts);
 router.delete("/admin/:id", isAuth, isAdmin, adminDeleteProducts);
 router.delete(
@@ -47,5 +65,7 @@ router.delete(
   adminDeleteProductImage
 );
 router.put("/admin/:id", isAuth, isAdmin, adminUpdateProduct);
+router.post("/admin/upload", isAuth, isAdmin, adminUpload);
+router.post("/admin", isAuth, isAdmin, adminCreateProduct);
 
 module.exports = router;

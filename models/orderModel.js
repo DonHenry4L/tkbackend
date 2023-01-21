@@ -55,4 +55,12 @@ const orderSchema = mongoose.Schema(
   }
 );
 
-module.exports = mongoose.model("Order", orderSchema);
+const Order = mongoose.model("Order", orderSchema);
+
+Order.watch().on("change", (data) => {
+  if (data.operationType === "insert") {
+    io.emit("newOrder", data.fullDocument);
+  }
+});
+
+module.exports = Order;

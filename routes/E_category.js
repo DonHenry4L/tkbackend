@@ -10,17 +10,17 @@ const {
 const { isAuth, isAdmin } = require("../middlewares/auth");
 
 // create Category
-router.post("/e_category",isAuth, isAdmin, newCategory);
+router.post("/",isAuth, isAdmin, newCategory);
 // post Category Attributes
 router.post("/attr",isAuth, isAdmin, saveAttributes);
 
 // update Category
-router.put("/e_category/:categoryId", isAuth, isAdmin, updateE_category);
+// router.put("/e_category/:categoryId", isAuth, isAdmin, updateE_category);
 // Delete Category
-router.delete("/e_category/:categoryId", isAuth, isAdmin, deleteCategory);
+router.delete("/:categoryId", isAuth, isAdmin, deleteCategory);
 // Get all category
-router.get("/e_categories", getCategories);
+router.get("/", getCategories);
 // get single Category
-router.get("/e_category/:slug", read);
+// router.get("/e_category/:slug", read);
 
 module.exports = router;

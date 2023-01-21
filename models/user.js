@@ -15,7 +15,7 @@ const userSchema = mongoose.Schema({
 
   username: {
     type: String,
-    required: true,
+    // required: true,
     trim: true,
     text: true,
     unique: true,
@@ -29,7 +29,7 @@ const userSchema = mongoose.Schema({
   },
   phone: {
     type: Number,
-    required: true,
+    // required: true,
     trim: true,
   },
   password: {
@@ -63,7 +63,7 @@ const userSchema = mongoose.Schema({
   // E-COMMERCE
   isAdmin: {
     type: Boolean,
-    required: true,
+    // required: true,
     default: false,
   },
   cart: {
@@ -79,49 +79,41 @@ const userSchema = mongoose.Schema({
 
   gender: {
     type: String,
-    required: [true, "gender is required"],
+    // required: [true, "gender is required"],
     trim: true,
   },
   bYear: {
     type: Number,
-    required: true,
+    // required: true,
     trim: true,
   },
   bMonth: {
     type: Number,
-    required: true,
+    // required: true,
     trim: true,
   },
   bDay: {
     type: Number,
-    required: true,
-    trim: true,
-  },
-
-  nationality: {
-    type: String,
-    required: true,
+    // required: true,
     trim: true,
   },
   country: {
     type: String,
-    required: true,
+    // required: true,
     trim: true,
   },
-  town: {
+  city: {
     type: String,
-    required: true,
-    trim: true,
-  },
-  lga: {
-    type: String,
-    required: true,
+    // required: true,
     trim: true,
   },
   state: {
     type: String,
-    required: true,
+    // required: true,
     trim: true,
+  },
+  website: {
+    type: String,
   },
   resetCode: "",
 });

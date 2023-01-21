@@ -9,9 +9,22 @@ const mongoose = require("mongoose");
 const { isValidObjectId } = mongoose;
 
 exports.uploadImage = async (req, res) => {
+  // try {
+  //   // console.log(req.files);
+  //   const result = await cloudinary.uploader.upload(req.body.picture);
+  //   // save to db
+  //   const media = await new Media({
+  //     url: result.secure_url,
+  //     public_id: result.public_id,
+  //     postedBy: req.user._id,
+  //   }).save();
+  //   res.json(media);
+  // } catch (err) {
+  //   console.log(err);
+  // }
   try {
     // console.log(req.body);
-    const result = await cloudinary.uploader.upload(req.body.picture);
+    const result = await cloudinary.uploader.upload(req.body.image);
     // console.log(result);
     res.json(result.secure_url);
   } catch (err) {
@@ -20,15 +33,19 @@ exports.uploadImage = async (req, res) => {
 };
 
 exports.uploadImageFile = async (req, res) => {
-  // console.log(req.files);
-  const result = await cloudinary.uploader.upload(req.files.file.path);
-  // save to db
-  const media = await new Media({
-    url: result.secure_url,
-    public_id: result.public_id,
-    postedBy: req.user._id,
-  }).save();
-  res.json(media);
+  try {
+    // console.log(req.files);
+    const result = await cloudinary.uploader.upload(req.files.file.path);
+    // save to db
+    const media = await new Media({
+      url: result.secure_url,
+      public_id: result.public_id,
+      postedBy: req.user._id,
+    }).save();
+    res.json(media);
+  } catch (err) {
+    console.log(err);
+  }
 };
 
 exports.createPost = async (req, res) => {
@@ -86,53 +103,37 @@ exports.createPost = async (req, res) => {
   }
 };
 
-exports.createComment = async (req, res) => {
-  const { postId } = req.params;
-  const { comment } = req.body;
-  const userId = req.user._id;
-
-  let newComment = await new Comment({
-    postedBy: userId,
-    postId,
-    content: comment,
-  });
-
-  // saving new comment
-  await newComment.save();
-  newComment = await newComment.populate("postedBy", "name");
-
-  res.json({ message: "Your comment has been added.", newComment });
-};
-
-// Will change later
-
 exports.posts = async (req, res) => {
-  const perPage = 6;
-  const page = req.params.page || 1;
+  try {
+    const perPage = 6;
+    const page = req.params.page || 1;
 
-  const all = await Post.find()
-    .skip((page - 1) * perPage)
-    .populate("featuredImage")
-    .populate("postedBy", "name")
-    .populate("categories", "name slug")
-    .sort({ createdAt: -1 })
-    .limit(perPage);
-  res.json(all);
+    const all = await Post.find()
+      .skip((page - 1) * perPage)
+      .populate("featuredImage")
+      .populate("postedBy", "username")
+      .populate("categories", "name slug")
+      .sort({ createdAt: -1 })
+      .limit(perPage);
+    res.json(all);
+  } catch (err) {
+    console.log(err);
+  }
 };
 
 exports.singlePost = async (req, res) => {
   try {
     const { slug } = req.params;
     const post = await Post.findOne({ slug })
-      .populate("postedBy", "name")
+      .populate("postedBy", "username")
       .populate("categories", "name slug")
       .populate("featuredImage", "url");
     // comments
     const comments = await Comment.find({ postId: post._id })
-      .populate("postedBy", "name")
+      .populate("postedBy", "username")
       .sort({ createdAt: -1 });
 
-    // console.log("__comments__", comments);
+    console.log("__comments__", comments);
 
     res.json({ post, comments });
   } catch (err) {
@@ -176,7 +177,7 @@ exports.editPost = async (req, res) => {
         },
         { new: true }
       )
-        .populate("postedBy", "name")
+        .populate("postedBy", "username")
         .populate("categories", "name slug")
         .populate("featuredImage", "url");
 
@@ -200,8 +201,7 @@ exports.postCount = async (req, res) => {
 exports.media = async (req, res) => {
   try {
     const media = await Media.find()
-      .populate("_id")
-      .populate("postedBy")
+      .populate("postedBy", "_id")
       .sort({ createdAt: -1 });
     res.json(media);
   } catch (err) {
@@ -230,11 +230,27 @@ exports.postsForAdmin = async (req, res) => {
 exports.postsByAuthor = async (req, res) => {
   try {
     const posts = await Post.find({ postedBy: req.user._id })
-      .populate("postedBy", "name")
+      .populate("postedBy", "username")
       .populate("categories", "name slug")
       .populate("featuredImage", "url")
       .sort({ createdAt: -1 });
     res.json(posts);
+  } catch (err) {
+    console.log(err);
+  }
+};
+
+exports.createComment = async (req, res) => {
+  try {
+    const { postId } = req.params;
+    const { comment } = req.body;
+    let newComment = await new Comment({
+      content: comment,
+      postedBy: req.user._id,
+      postId,
+    }).save();
+    newComment = await newComment.populate("postedBy", "username");
+    res.json(newComment);
   } catch (err) {
     console.log(err);
   }
@@ -247,7 +263,7 @@ exports.comments = async (req, res) => {
 
     const allComments = await Comment.find()
       .skip((page - 1) * perPage)
-      .populate("postedBy", "name")
+      .populate("postedBy", "username")
       .populate("postId", "title slug")
       .sort({ createdAt: -1 })
       .limit(perPage);
@@ -261,7 +277,7 @@ exports.comments = async (req, res) => {
 exports.userComments = async (req, res) => {
   try {
     const comments = await Comment.find({ postedBy: req.user._id })
-      .populate("postedBy", "name")
+      .populate("postedBy", "username")
       .populate("postId", "title slug")
       .sort({ createdAt: -1 });
 

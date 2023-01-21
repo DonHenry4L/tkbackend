@@ -66,46 +66,27 @@ exports.updateCategory = async (req, res) => {
     sendError(res, "Category not found!", 404);
   }
 };
-//   const { slug } = req.params;
-//   const { name } = req.body;
-
-//   if (!isValidObjectId(slug)) return sendError(res, "Invalid Category ID!");
-
-//   const category = await Category.findByIdAndUpdate({ _id: slug });
-//   if (!category)
-//     return (
-//       sendError(res, "Category not found!", 404), { name, slug: slugify(name) }
-//       // { new: true }
-//     );
-
-//   category.name = name;
-
-//   await category.save();
-
-//   res.json({ message: "Your category has been updated.", category });
-// });
-
-//delete category
-// exports.deleteCategory = (async (req, res) => {
-//   const { slug } = req.params;
-
-//   if (!isValidObjectId(slug)) return sendError(res, "Invalid category ID!");
-
-//   const category = await Category.findOne({ _id: slug });
-
-//   if (!category)
-//     return sendError(res, "Invalid request, category not found or Deleted!");
-
-//   await Category.findByIdAndDelete(slug);
-
-//   res.json({ message: "Category Deleted Successfully" });
-// });
 
 exports.deleteCategory = async (req, res) => {
   try {
     const { slug } = req.params;
     const category = await Category.findOneAndDelete({ slug });
     res.json(category);
+  } catch (err) {
+    console.log(err);
+  }
+};
+
+exports.postsByCategory = async (req, res) => {
+  try {
+    const { slug } = req.params;
+    const category = await Category.findOne({ slug });
+
+    const posts = await Post.find({ categories: category._id })
+      .populate("featuredImage postedBy")
+      .limit(20);
+
+    res.json({ posts, category });
   } catch (err) {
     console.log(err);
   }

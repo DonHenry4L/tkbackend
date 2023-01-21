@@ -20,16 +20,22 @@ const {
 const { generateOTP, generateMailTransporter } = require("../utils/mail");
 const { isValidObjectId } = require("mongoose");
 const PasswordResetToken = require("../models/passwordResetToken");
+const crypto = require("crypto");
 
 // SENDINBLUE_API //
-const SibApiV3Sdk  = require("sib-api-v3-sdk");
+const SibApiV3Sdk = require("sib-api-v3-sdk");
 require("dotenv").config();
 
 const client = SibApiV3Sdk.ApiClient.instance;
 const apiKey = client.authentications["api-key"];
 apiKey.apiKey = process.env.SENDINBLUE_API_KEY;
-
 // END SENDINBLUE_API //
+
+// TWILIO_API //
+// const accountSid = process.env.TWILIO_ACCOUNT_SID;
+// const authToken = process.env.TWILIO_AUTH_TOKEN;
+// const twilioClient = require("twilio")(accountSid, authToken);
+// END TWILIO_API //
 
 exports.register = async (req, res) => {
   const {
@@ -43,10 +49,9 @@ exports.register = async (req, res) => {
     bMonth,
     bDay,
     phone,
-    nationality,
     country,
-    town,
-    lga,
+    address,
+    city,
     state,
     gender,
   } = req.body;
@@ -72,10 +77,9 @@ exports.register = async (req, res) => {
     bMonth,
     bDay,
     phone,
-    nationality,
     country,
-    town,
-    lga,
+    address,
+    city,
     state,
     gender,
   });
@@ -104,71 +108,117 @@ exports.register = async (req, res) => {
 
   // prepare email and sms
   //Email
-  const tranEmailApiInstant = new SibApiV3Sdk.TransactionalEmailsApi();
-  let sendSmtpEmail = new SibApiV3Sdk.SendSmtpEmail();
+  const tranEmailApi = new SibApiV3Sdk.TransactionalEmailsApi();
+  // let sendSmtpEmail = new SibApiV3Sdk.SendSmtpEmail();
 
-  //Sms
-  let apiInstance = new SibApiV3Sdk.TransactionalSMSApi();
-  let sendTransacSms = new SibApiV3Sdk.SendTransacSms();
+  // //Sms
+  // let apiInstance = new SibApiV3Sdk.TransactionalSMSApi();
+  // let sendTransacSms = new SibApiV3Sdk.SendTransacSms();
 
-  sendTransacSms = {
-    "sender": "TKfamily",
-    "receiver": newUser.phone,
-    "content": `<p>Your Tkfamily verification OTP</p>
-    <h1>${OTP}</h1>`,
-  }
-
-  apiInstance.sendTransacSms(sendTransacSms).then(function(data) {
-    console.log('Sms successfully sent to recipient: ' + JSON.stringify(data));
-  }, function(error) {
-    console.error(error);
-  });
-
-  sendSmtpEmail.sender = {
-    email: process.env.VERIFICATION_EMAIL,
-    name: "TKF",
-  }
-
-  sendSmtpEmail.to = {
-    email: newUser.email, 
-    name: newUser.username
-  }
-
-  sendSmtpEmail.subject = "This Message is from Tksarl.com"
-
-  sendSmtpEmail.htmlContent = `<p>Your verification OTP</p>
-   <h1>${OTP}</h1>`
-
-   tranEmailApiInstant.sendTransacEmail(sendSmtpEmail).then(function(data) {
-    console.log('Email successfully sent to recipient: ' + JSON.stringify(data))
-   }, function(error) {
-    console.log(error)
-   })
-
-  // const sender = {
-  //   email: process.env.VERIFICATION_EMAIL,
-  //   name: "TKF",
-  //   templateId: 1,
-  //   params: {
-  //     greeting: `Hello`,
-  //     headline: "This Message is from Tksarl.com",
-  //   },
+  // sendTransacSms = {
+  //   sender: "TKfamily",
+  //   receiver: newUser.phone,
+  //   content: `<p>Your Tkfamily verification OTP</p>
+  //   <h1>${OTP}</h1>`,
   // };
 
-  // const receivers = [
+  // apiInstance.sendTransacSms(sendTransacSms).then(
+  //   function (data) {
+  //     console.log(
+  //       "Sms successfully sent to recipient: " + JSON.stringify(data)
+  //     );
+  //   },
+  //   function (error) {
+  //     console.error(error);
+  //   }
+  // );
+
+  // sendSmtpEmail.sender = {
+  //   email: process.env.VERIFICATION_EMAIL,
+  //   name: "TKF",
+  // };
+
+  // sendSmtpEmail.to = {
+  //   email: newUser.email,
+  //   name: newUser.username,
+  // };
+
+  // sendSmtpEmail.subject = "This Message is from Tksarl.com";
+
+  // sendSmtpEmail.htmlContent = `<p>Your verification OTP</p>
+  //  <h1>${OTP}</h1>`;
+
+  // tranEmailApiInstant.sendTransacEmail(sendSmtpEmail).then(
+  //   function (data) {
+  //     console.log(
+  //       "Email successfully sent to recipient: " + JSON.stringify(data)
+  //     );
+  //   },
+  //   function (error) {
+  //     console.log(error);
+  //   }
+  // );
+
+  const sender = {
+    email: process.env.VERIFICATION_EMAIL,
+    name: "TKF",
+  };
+
+  const receivers = [
+    {
+      email: newUser.email,
+    },
+  ];
+  // const smsReceivers = [
   //   {
-  //     email: newUser.email,
+  //     phone: newUser.phone,
   //   },
   // ];
 
-  // tranEmailApi.sendTransacEmail({
-  //   sender,
-  //   to: receivers,
-  //   subject: "Email Verification",
+  tranEmailApi.sendTransacEmail({
+    sender,
+    to: receivers,
+    subject: "Email Verification",
 
-  //   htmlContent: `<p>Your verification OTP</p>
+    htmlContent: `<p>Your verification OTP</p>
+  <h1>${OTP}</h1>`,
+  });
+
+  // sendTransacSms = {
+  //   sender: "tkfamily",
+  //   recipient: "+2348065744999",
+  //   subject: "SMS Verification",
+
+  //   content: `<p>Your verification OTP</p>
   // <h1>${OTP}</h1>`,
-  // });
+  // };
+  // apiInstance.sendTransacSms(sendTransacSms).then(
+  //   function (data) {
+  //     console.log(
+  //       "API called successfully. Returned data: " + JSON.stringify(data)
+  //     );
+  //   },
+  //   function (error) {
+  //     console.error(error);
+  //   }
+  // );
+
+  {
+    /* TWILIO */
+  }
+  // TO DO: buy a twilio phone number first
+  // twilioClient.messages
+  //   .create({
+  //     from: "+2348065744999",
+  //     to: newUser.phone,
+  //     body: `<p>Your verification OTP</p>
+  //     <h1>${OTP}</h1>`,
+  //   })
+  //   .then((message) => console.log(message.sid))
+  //   .done();
+  {
+    /* TWILIO */
+  }
 
   res
     .cookie(
@@ -178,6 +228,7 @@ exports.register = async (req, res) => {
         newUser.first_name,
         newUser.last_name,
         newUser.email,
+        newUser.phone,
         newUser.isAdmin,
         newUser.role
       ),
@@ -202,6 +253,108 @@ exports.register = async (req, res) => {
     });
 };
 
+// create User by Admin
+exports.createUser = async (req, res) => {
+  try {
+    // console.log(req.body);
+    const {
+      first_name,
+      last_name,
+      username,
+      email,
+      password,
+      role,
+      checked,
+      isAdmin,
+      website,
+    } = req.body;
+    if (!first_name && !last_name) {
+      return sendError(res, "Name is Required!");
+    }
+    if (!email) {
+      return sendError(res, "Email is Required!");
+    }
+    if (!password || password.length < 8) {
+      return sendError(
+        res,
+        "Password is required and should be 8 characters long!"
+      );
+    }
+    // if user exists
+    const exist = await User.findOne({ email });
+    if (exist) {
+      sendError(res, "Email is taken");
+    }
+
+    // if checked, send Email with login details
+    if (checked) {
+      // prepare email
+      const tranEmailApi = new SibApiV3Sdk.TransactionalEmailsApi();
+
+      const sender = {
+        email: process.env.EMAIL_FROM,
+        name: "TKF",
+      };
+
+      const receivers = [
+        {
+          email: email,
+        },
+      ];
+
+      tranEmailApi.sendTransacEmail({
+        sender,
+        to: receivers,
+        subject: "Account Created",
+
+        htmlContent: `
+    <h1>Hi ${last_name}</h1>
+        <p>Your Royal KATD account has been created successfully.</p>
+        <h3>Your login details</h3>
+        <p style="color:red;">Email: ${email}</p>
+        <p style="color:red;">Password: ${password}</p>
+        <p style="color:green;">Website: ${website} (we can make your business go online, if interested, contact support)</p>
+        <small>We recommend you to change your password after login.</small>
+    `,
+      });
+    }
+
+    let tempUsername = first_name + last_name;
+    let newUsername = await validateUsername(tempUsername);
+
+    try {
+      const user = new User({
+        first_name,
+        last_name,
+        username: newUsername,
+        email,
+        password,
+        role,
+        isAdmin,
+        website,
+      });
+
+      await user.save();
+
+      // const { password, ...rest } = user._doc;
+      return res.json({
+        user: {
+          id: user._id,
+          isAdmin: user.isAdmin,
+          first_name: user.first_name,
+          last_name: user.last_name,
+          email: user.email,
+          website: user.website,
+        },
+      });
+    } catch (err) {
+      console.log(err);
+    }
+  } catch (error) {
+    console.log(error);
+  }
+};
+
 exports.login = async (req, res) => {
   const { email, password, doNotLogout } = req.body;
 
@@ -216,49 +369,83 @@ exports.login = async (req, res) => {
   if (!matched) return sendError(res, "Email/Password mismatch!");
 
   let cookieParams = {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "strict",
-      };
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "strict",
+  };
 
-      if (doNotLogout) {
-            cookieParams = { ...cookieParams, maxAge: 1000 * 60 * 60 * 24 * 7 }; //1000=lms
-          }
+  if (doNotLogout) {
+    cookieParams = { ...cookieParams, maxAge: 1000 * 60 * 60 * 24 * 7 }; //1000=lms
+  }
 
-  const { _id, first_name, last_name,picture,username, isVerified, role, isAdmin } = user;
+  const {
+    _id,
+    first_name,
+    last_name,
+    picture,
+    username,
+    isVerified,
+    role,
+    isAdmin,
+  } = user;
   const jwtToken = jwt.sign({ userId: _id }, process.env.JWT_SECRET);
-  // res.cookie(
-  //   "access_token",
-  //   generateCookieToken(
-  //     user._id,
-  //     user.first_name,
-  //     user.last_name,
-  //     user.email,
-  //     user.isAdmin,
-  //     user.role
-  //   ),
-  //   cookieParams
-  // )
-  // .json({
-  //   user: { 
-  //     id: _id,
-  //             first_name,
-  //             last_name,
-  //             email,
-  //            isAdmin,
-  //             token: jwtToken,
-  //             role,
-  //             picture,
-  //             username,
-  //             isVerified,
-  //             doNotLogout, },
-  // });
+  return res
+    .cookie(
+      "access_token",
+      generateCookieToken(
+        user._id,
+        user.first_name,
+        user.last_name,
+        user.email,
+        user.isAdmin,
+        user.role
+      ),
+      cookieParams
+    )
+    .json({
+      user: {
+        _id: _id,
+        first_name,
+        last_name,
+        picture,
+        username,
+        email,
+        role,
+        isAdmin,
+        token: jwtToken,
+        isVerified,
+        doNotLogout,
+      },
+      // user: {
+      //   _id: user._id,
+      //   first_name: user.first_name,
+      //   last_name: user.last_name,
+      //   email: user.email,
+      //   isAdmin: user.isAdmin,
+      //   // token: jwtToken,
+      //   role: user.role,
+      //   picture: user.picture,
+      //   username: user.username,
+      //   isVerified: user.isVerified,
+      //   doNotLogout,
+      // },
+    });
 
-  res.json({
-    user: { id: _id, first_name, last_name, picture,
-      username, email, role,isAdmin, token: jwtToken, isVerified, doNotLogout },
-  });
-  
+  // res.json({
+  //   user: {
+  //     id: _id,
+  //     first_name,
+  //     last_name,
+  //     picture,
+  //     username,
+  //     email,
+  //     role,
+  //     isAdmin,
+  //     token: jwtToken,
+  //     isVerified,
+  //     doNotLogout,
+  //   },
+  // });
 
   // if (user && comparePassword(password, user.password)) {
   //   let cookieParams = {
@@ -330,6 +517,53 @@ exports.login = async (req, res) => {
   // res.json({
   //   user: { id: _id, name, email, role, token: jwtToken, isVerified },
   // });
+
+  // try {
+  //   const { email, password, doNotLogout } = req.body;
+  //   if (!(email && password)) {
+  //     return res.status(400).send("All inputs are required");
+  //   }
+
+  //   const user = await User.findOne({ email }).orFail();
+  //   const matched = await user.comparePassword(password);
+  //   if (!matched) return sendError(res, "Email/Password mismatch!");
+
+  //   let cookieParams = {
+  //     httpOnly: true,
+  //     secure: process.env.NODE_ENV === "production",
+  //     sameSite: "strict",
+  //   };
+
+  //   if (doNotLogout) {
+  //     cookieParams = { ...cookieParams, maxAge: 1000 * 60 * 60 * 24 * 7 }; // 1000=1ms
+  //   }
+
+  //   return res
+  //     .cookie(
+  //       "access_token",
+  //       generateCookieToken(
+  //         user._id,
+  //         user.first_name,
+  //         user.last_name,
+  //         user.email,
+  //         user.isAdmin
+  //       ),
+  //       cookieParams
+  //     )
+  //     .json({
+  //       success: "user logged in",
+  //       user: {
+  //         _id: user._id,
+  //         first_name: user.first_name,
+  //         last_name: user.last_name,
+  //         email: user.email,
+  //         isAdmin: user.isAdmin,
+  //         doNotLogout,
+  //       },
+  //     });
+  // } catch (err) {
+  //   sendError(res, "unable to login: Server Error!");
+  // }
 };
 
 exports.verifyEmail = async (req, res) => {
@@ -385,7 +619,45 @@ exports.resendEmailVerificationToken = async (req, res) => {
       "Only after one hour you can request for another token!"
     );
 
-  sendVerificationEmail(user.email, user.first_name);
+  //
+
+  let OTP = generateOTP();
+
+  // store otp inside our db
+  const newEmailVerificationToken = new EmailVerificationToken({
+    owner: user._id,
+    token: OTP,
+  });
+
+  await newEmailVerificationToken.save();
+  // send that otp to our user
+
+  // prepare email and sms
+  //Email
+  const tranEmailApi = new SibApiV3Sdk.TransactionalEmailsApi();
+
+  const sender = {
+    email: process.env.VERIFICATION_EMAIL,
+    name: "TKF",
+  };
+
+  const receivers = [
+    {
+      email: user.email,
+    },
+  ];
+
+  tranEmailApi.sendTransacEmail({
+    sender,
+    to: receivers,
+    subject: "Email Verification",
+
+    htmlContent: `<p>Your verification OTP</p>
+    <h1>${OTP}</h1>`,
+  });
+
+  //
+
   const token = generateToken({ id: user._id.toString() }, "7d");
   res.send({
     id: user._id,
@@ -411,16 +683,15 @@ exports.getUsers = async (req, res) => {
 exports.updateUserProfile = async (req, res) => {
   try {
     const user = await User.findById(req.user._id);
+
     user.first_name = req.body.first_name || user.first_name;
     user.last_name = req.body.last_name || user.last_name;
     user.username = req.body.username || user.username;
     user.email = req.body.email || user.email;
     user.phone = req.body.phone || user.phone;
     user.gender = req.body.gender || user.gender;
-    user.nationality = req.body.nationality || user.nationality;
     user.country = req.body.country || user.country;
-    user.town = req.body.town || user.town;
-    user.lga = req.body.lga || user.lga;
+    user.city = req.body.city || user.city;
     user.state = req.body.state || user.state;
     user.picture = req.body.picture;
     user.address = req.body.address;
@@ -453,7 +724,7 @@ exports.updateUserProfile = async (req, res) => {
 
 exports.getUserProfile = async (req, res) => {
   try {
-    const user = await User.findById(req.params.id);
+    const user = await User.findById(req.params.id).populate("picture");
     return res.send(user);
   } catch (error) {
     if (error) return sendError(res, "failed to Get User Profile");
@@ -511,10 +782,11 @@ exports.writeReview = async (req, res) => {
       product.reviewsNumber = 1;
     } else {
       product.reviewsNumber = product.reviews.length;
-      product.rating =
+      let ratingCalc =
         prc
           .map((item) => Number(item.rating))
           .reduce((sum, item) => sum + item, 0) / product.reviews.length;
+      product.rating = Math.round(ratingCalc);
     }
     await product.save();
 
@@ -545,8 +817,8 @@ exports.updateUser = async (req, res) => {
     user.last_name = req.body.last_name || user.last_name;
     user.username = req.body.username || user.username;
     user.email = req.body.email || user.email;
-    user.role = req.body.role || user.role;
-    user.isAdmin = req.body.isAdmin || user.isAdmin; // same with role
+    user.role = req.body.role;
+    user.isAdmin = req.body.isAdmin; // same with role
 
     await user.save();
 
@@ -589,5 +861,228 @@ exports.currentUser = async (req, res) => {
     res.json({ ok: true });
   } catch (error) {
     sendError(res, error);
+  }
+};
+
+exports.forgetPassword = async (req, res) => {
+  const { email } = req.body;
+  if (!email) return sendError(res, "email is invalid");
+
+  const user = await User.findOne({ email });
+  if (!user) return sendError(res, "User not found", 404);
+
+  const alreadyHasToken = await PasswordResetToken.findOne({ owner: user._id });
+  if (alreadyHasToken)
+    return sendError(
+      res,
+      "Only after one hour you can request for another token!"
+    );
+
+  const token = await generateRandomByte();
+  const newPasswordResetToken = await PasswordResetToken({
+    owner: user._id,
+    token,
+  });
+  await newPasswordResetToken.save();
+
+  const resetPasswordUrl = `http://localhost:3000/auth/reset-password?token=${token}&id=${user._id}`;
+
+  // prepare email
+  //Email
+  const tranEmailApi = new SibApiV3Sdk.TransactionalEmailsApi();
+
+  const sender = {
+    email: process.env.PASSWORD_RESET_LINK,
+    name: "TKF",
+    templateId: 1,
+    params: {
+      greeting: `Hello`,
+      headline: "This Message is from Tksarl.com",
+    },
+  };
+
+  const receivers = [
+    {
+      email: user.email,
+    },
+  ];
+
+  tranEmailApi.sendTransacEmail({
+    sender,
+    to: receivers,
+    subject: "Reset Password Link",
+
+    htmlContent: `<p>Click here to reset your password</p>
+  <a href='${resetPasswordUrl}'>Change Password</a>`,
+  });
+
+  res.json({ message: "Link sent to your email" });
+};
+
+exports.sendResetPasswordTokenStatus = (req, res) => {
+  res.json({ valid: true });
+};
+exports.resetPassword = async (req, res) => {
+  const { newPassword, userId } = req.body;
+
+  // find the user by id
+  const user = await User.findById(userId);
+  // check if the passwords are the same
+  const matched = await user.comparePassword(newPassword);
+  if (matched)
+    return sendError(
+      res,
+      "The new password must be different from the old one!"
+    );
+
+  user.password = newPassword;
+  await user.save();
+
+  await PasswordResetToken.findByIdAndDelete(req.resetToken._id);
+
+  // prepare confirmation email
+  //Email
+  const tranEmailApi = new SibApiV3Sdk.TransactionalEmailsApi();
+
+  const sender = {
+    email: process.env.PASSWORD_VERIFICATION,
+    name: "TKF",
+  };
+
+  const receivers = [
+    {
+      email: user.email,
+    },
+  ];
+
+  tranEmailApi.sendTransacEmail({
+    sender,
+    to: receivers,
+    subject: "Password Reset Successfully",
+
+    htmlContent: `<h1>Password Reset Successfully</h1>
+  <p>Now You can use new Password</p>`,
+  });
+
+  res.json({
+    message: "password reset successfully, now you can use new password",
+  });
+};
+
+exports.updateUserByAdmin = async (req, res) => {
+  try {
+    const {
+      id,
+      first_name,
+      last_name,
+      email,
+      password,
+      website,
+      role,
+      isAdmin,
+      picture,
+    } = req.body;
+
+    const userFromDb = await User.findById(id);
+
+    // check valid email
+    if (!validateEmail.validate(email)) {
+      return res.json({ error: "Invalid email" });
+    }
+    // check if email is taken
+    const exist = await User.findOne({ email });
+    if (exist && exist._id.toString() !== userFromDb._id.toString()) {
+      return res.json({ error: "Email is taken" });
+    }
+    // check password length
+    if (password && password.length < 6) {
+      return res.json({
+        error: "Password is required and should be 6 characters long",
+      });
+    }
+    const updated = await User.findByIdAndUpdate(
+      id,
+      {
+        first_name: first_name || userFromDb.first_name,
+        last_name: last_name || userFromDb.last_name,
+        email: email || userFromDb.email,
+        password: password || userFromDb.password,
+        website: website || userFromDb.website,
+        role: role || userFromDb.role,
+        isAdmin: isAdmin || userFromDb.isAdmin,
+        picture: picture || userFromDb.picture,
+      },
+      { new: true }
+    ).populate("picture");
+
+    res.json(updated);
+  } catch (err) {
+    console.log(err);
+  }
+};
+
+exports.updateUserByUser = async (req, res) => {
+  try {
+    const {
+      id,
+      first_name,
+      last_name,
+      email,
+      password,
+      username,
+      picture,
+      phone,
+      country,
+      address,
+      city,
+      state,
+      website,
+    } = req.body;
+
+    const userFromDb = await User.findById(id);
+
+    // // check if user is himself/herself
+    // if (userFromDb._id.toString() !== req.user._id.toString()) {
+    //   return res.status(403).send("You are not allowed to update this user");
+    // }
+
+    // check valid email
+    if (!validateEmail(email)) {
+      return res.json({ error: "Invalid email" });
+    }
+    // check if email is taken
+    const exist = await User.findOne({ email });
+    if (exist) {
+      return res.json({ error: "Email is taken" });
+    }
+    // check password length
+    if (password && password.length < 8) {
+      return res.json({
+        error: "Password is required and should be 8 characters long",
+      });
+    }
+    const updated = await User.findByIdAndUpdate(
+      id,
+      {
+        first_name: first_name || userFromDb.first_name,
+        last_name: last_name || userFromDb.last_name,
+        username: username || userFromDb.username,
+        email: email || userFromDb.email,
+        phone: phone || userFromDb.phone,
+        country: country || userFromDb.country,
+        city: city || userFromDb.city,
+        state: state || userFromDb.state,
+        website: website || userFromDb.website,
+        address: address || userFromDb.address,
+        // role: role || userFromDb.role,
+        picture: picture || userFromDb.picture,
+        password: password || userFromDb.password,
+      },
+      { new: true }
+    ).populate("picture");
+
+    res.json(updated);
+  } catch (err) {
+    console.log(err);
   }
 };

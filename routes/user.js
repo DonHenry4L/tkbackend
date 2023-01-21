@@ -4,34 +4,63 @@ const jwt = require("jsonwebtoken");
 const {
   register,
   login,
+  createUser,
   verifyEmail,
   currentUser,
   allUsers,
   getUsers,
-  updateUserProfile,
+  updateUserByUser,
   getUserProfile,
   writeReview,
   getUser,
   updateUser,
   deleteUser,
+  forgetPassword,
+  sendResetPasswordTokenStatus,
+  resetPassword,
+  resendEmailVerificationToken,
 } = require("../controllers/user");
-const { isAuth, isAdmin, isAuthor, isASubscriber } = require("../middlewares/auth");
+const {
+  isAuth,
+  isAdmin,
+  isAuthor,
+  isASubscriber,
+} = require("../middlewares/auth");
+const { isValidPassResetToken } = require("../middlewares/user");
 const {
   signInValidator,
   validate,
   userValidator,
+  validatePassword,
 } = require("../middlewares/validator");
 const router = express.Router();
 
 router.post("/register", userValidator, validate, register);
+// create user by admin
+router.post("/create-user", isAuth, isAdmin, createUser);
+
 router.post("/login", signInValidator, validate, login);
 router.post("/verify-email", verifyEmail);
+router.post("/resend-email-verification-token", resendEmailVerificationToken);
+router.post("/forget-password", forgetPassword);
+router.post(
+  "/verify-pass-reset-token",
+  isValidPassResetToken,
+  sendResetPasswordTokenStatus
+);
+router.post(
+  "/reset-password",
+  validate,
+  validatePassword,
+  isValidPassResetToken,
+  resetPassword
+);
 
 router.get("/allUsers", isAuth, isAdmin, allUsers);
+router.put("/profile", isAuth, updateUserByUser);
+router.get("/profile/:id", isAuth, getUserProfile);
 
 // Users routes for E commerce
-router.put("/profile", isAuth, updateUserProfile);
-router.get("/profile/:id", isAuth, getUserProfile);
 router.post("/user/review/:productId", isAuth, writeReview);
 
 // Admin routes for E commerce
@@ -55,8 +84,8 @@ router.delete("/:id", isAuth, isAdmin, deleteUser);
 // })
 
 router.get("/logout", (req, res) => {
-  return res.clearCookie("access_token").send("access token cleared")
-})
+  return res.clearCookie("access_token").send("access token cleared");
+});
 
 // router.get("/is-auth", isAuth, (req, res) => {
 //   const { user } = req;
